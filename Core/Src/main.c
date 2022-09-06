@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "bsp_ili9341_lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,9 +39,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- LTDC_HandleTypeDef hltdc;
-
-SPI_HandleTypeDef hspi1;
+ SRAM_HandleTypeDef hsram1;
 
 /* USER CODE BEGIN PV */
 
@@ -50,15 +48,115 @@ SPI_HandleTypeDef hspi1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_LTDC_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_FMC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if 0
+void LCD_Test(void)
+{
+    /*演示显示变量*/
+	static uint8_t testCNT = 0;	
+	char dispBuff[100];
+	
+	testCNT++;	
+	
+	LCD_SetFont(&Font8x16);
+	LCD_SetColors(RED,BLACK);
 
+    ILI9341_Clear(0,0,LCD_X_LENGTH,LCD_Y_LENGTH);	/* 清屏，显示全黿 */
+	/********显示字符串示便*******/
+    ILI9341_DispStringLine_EN(LINE(0),"BH 3.2 inch LCD para:");
+    ILI9341_DispStringLine_EN(LINE(1),"Image resolution:240x320 px");
+    if(lcdid == LCDID_ILI9341)
+    {
+        ILI9341_DispStringLine_EN(LINE(2),"ILI9341 LCD driver");
+    }
+    else if(lcdid == LCDID_ST7789V)
+    {
+        ILI9341_DispStringLine_EN(LINE(2),"ST7789V LCD driver");
+    }
+    ILI9341_DispStringLine_EN(LINE(3),"XPT2046 Touch Pad driver");
+  
+	/********显示变量示例*******/
+	LCD_SetFont(&Font16x24);
+	LCD_SetTextColor(GREEN);
+
+	/*使用c标准库把变量转化成字符串*/
+	sprintf(dispBuff,"Count : %d ",testCNT);
+    LCD_ClearLine(LINE(4));	/* 清除单行文字 */
+	
+	/*然后显示该字符串即可，其它变量也是这样处琿*/
+	ILI9341_DispStringLine_EN(LINE(4),dispBuff);
+
+	/*******显示图形示例******/
+	LCD_SetFont(&Font24x32);
+    /* 画直线 */
+  
+    LCD_ClearLine(LINE(4));/* 清除单行文字 */
+	LCD_SetTextColor(BLUE);
+
+    ILI9341_DispStringLine_EN(LINE(4),"Draw line:");
+  
+	LCD_SetTextColor(RED);
+    ILI9341_DrawLine(50,170,210,230);  
+    ILI9341_DrawLine(50,200,210,240);
+  
+	LCD_SetTextColor(GREEN);
+    ILI9341_DrawLine(100,170,200,230);  
+    ILI9341_DrawLine(200,200,220,240);
+	
+	LCD_SetTextColor(BLUE);
+    ILI9341_DrawLine(110,170,110,230);  
+    ILI9341_DrawLine(130,200,220,240);
+  
+    HAL_Delay(1000);
+  
+    ILI9341_Clear(0,16*8,LCD_X_LENGTH,LCD_Y_LENGTH-16*8);	/* 清屏，显示全黿 */
+   
+    /*画矩彿*/
+
+    LCD_ClearLine(LINE(4));	/* 清除单行文字 */
+	LCD_SetTextColor(BLUE);
+
+    ILI9341_DispStringLine_EN(LINE(4),"Draw Rect:");
+
+	LCD_SetTextColor(RED);
+    ILI9341_DrawRectangle(50,200,100,30,1);
+	
+	LCD_SetTextColor(GREEN);
+    ILI9341_DrawRectangle(160,200,20,40,0);
+	
+	LCD_SetTextColor(BLUE);
+    ILI9341_DrawRectangle(170,200,50,20,1);
+   
+    HAL_Delay(1000);
+	
+    ILI9341_Clear(0,16*8,LCD_X_LENGTH,LCD_Y_LENGTH-16*8);	/* 清屏，显示全黿 */
+
+    /* 画圆 */
+    LCD_ClearLine(LINE(4));	/* 清除单行文字 */
+	LCD_SetTextColor(BLUE);
+	
+    ILI9341_DispStringLine_EN(LINE(4),"Draw Cir:");
+
+	LCD_SetTextColor(RED);
+    ILI9341_DrawCircle(100,200,20,0);
+	
+	LCD_SetTextColor(GREEN);
+    ILI9341_DrawCircle(100,200,10,1);
+	
+	LCD_SetTextColor(BLUE);
+	ILI9341_DrawCircle(140,200,20,0);
+
+    HAL_Delay(1000);
+  
+    ILI9341_Clear(0,16*8,LCD_X_LENGTH,LCD_Y_LENGTH-16*8);	/* 清屏，显示全黿 */
+}
+#endif
 /* USER CODE END 0 */
 
 /**
@@ -89,18 +187,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_LTDC_Init();
-  MX_SPI1_Init();
+  MX_FMC_Init();
   /* USER CODE BEGIN 2 */
-
   /* USER CODE END 2 */
-
+  ILI9341_Init();
+  uint16_t test = ILI9341_ReadID();
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
-
+    //LCD_Test();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -158,104 +255,66 @@ void SystemClock_Config(void)
   }
 }
 
-/**
-  * @brief LTDC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_LTDC_Init(void)
+/* FMC initialization function */
+static void MX_FMC_Init(void)
 {
 
-  /* USER CODE BEGIN LTDC_Init 0 */
+  /* USER CODE BEGIN FMC_Init 0 */
 
-  /* USER CODE END LTDC_Init 0 */
+  /* USER CODE END FMC_Init 0 */
 
-  LTDC_LayerCfgTypeDef pLayerCfg = {0};
+  FMC_NORSRAM_TimingTypeDef Timing = {0};
+  FMC_NORSRAM_TimingTypeDef ExtTiming = {0};
 
-  /* USER CODE BEGIN LTDC_Init 1 */
+  /* USER CODE BEGIN FMC_Init 1 */
 
-  /* USER CODE END LTDC_Init 1 */
-  hltdc.Instance = LTDC;
-  hltdc.Init.HSPolarity = LTDC_HSPOLARITY_AL;
-  hltdc.Init.VSPolarity = LTDC_VSPOLARITY_AL;
-  hltdc.Init.DEPolarity = LTDC_DEPOLARITY_AL;
-  hltdc.Init.PCPolarity = LTDC_PCPOLARITY_IPC;
-  hltdc.Init.HorizontalSync = 7;
-  hltdc.Init.VerticalSync = 3;
-  hltdc.Init.AccumulatedHBP = 14;
-  hltdc.Init.AccumulatedVBP = 5;
-  hltdc.Init.AccumulatedActiveW = 334;
-  hltdc.Init.AccumulatedActiveH = 245;
-  hltdc.Init.TotalWidth = 340;
-  hltdc.Init.TotalHeigh = 247;
-  hltdc.Init.Backcolor.Blue = 0;
-  hltdc.Init.Backcolor.Green = 0;
-  hltdc.Init.Backcolor.Red = 0;
-  if (HAL_LTDC_Init(&hltdc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  pLayerCfg.WindowX0 = 0;
-  pLayerCfg.WindowX1 = 320;
-  pLayerCfg.WindowY0 = 0;
-  pLayerCfg.WindowY1 = 240;
-  pLayerCfg.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
-  pLayerCfg.Alpha = 255;
-  pLayerCfg.Alpha0 = 0;
-  pLayerCfg.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-  pLayerCfg.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-  pLayerCfg.FBStartAdress = 0;
-  pLayerCfg.ImageWidth = 0;
-  pLayerCfg.ImageHeight = 0;
-  pLayerCfg.Backcolor.Blue = 255;
-  pLayerCfg.Backcolor.Green = 0;
-  pLayerCfg.Backcolor.Red = 0;
-  if (HAL_LTDC_ConfigLayer(&hltdc, &pLayerCfg, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN LTDC_Init 2 */
+  /* USER CODE END FMC_Init 1 */
 
-  /* USER CODE END LTDC_Init 2 */
-
-}
-
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
+  /** Perform the SRAM1 memory initialization sequence
   */
-static void MX_SPI1_Init(void)
-{
+  hsram1.Instance = FMC_NORSRAM_DEVICE;
+  hsram1.Extended = FMC_NORSRAM_EXTENDED_DEVICE;
+  /* hsram1.Init */
+  hsram1.Init.NSBank = FMC_NORSRAM_BANK1;
+  hsram1.Init.DataAddressMux = FMC_DATA_ADDRESS_MUX_DISABLE;
+  hsram1.Init.MemoryType = FMC_MEMORY_TYPE_SRAM;
+  hsram1.Init.MemoryDataWidth = FMC_NORSRAM_MEM_BUS_WIDTH_16;
+  hsram1.Init.BurstAccessMode = FMC_BURST_ACCESS_MODE_DISABLE;
+  hsram1.Init.WaitSignalPolarity = FMC_WAIT_SIGNAL_POLARITY_LOW;
+  hsram1.Init.WrapMode = FMC_WRAP_MODE_DISABLE;
+  hsram1.Init.WaitSignalActive = FMC_WAIT_TIMING_BEFORE_WS;
+  hsram1.Init.WriteOperation = FMC_WRITE_OPERATION_ENABLE;
+  hsram1.Init.WaitSignal = FMC_WAIT_SIGNAL_DISABLE;
+  hsram1.Init.ExtendedMode = FMC_EXTENDED_MODE_ENABLE;
+  hsram1.Init.AsynchronousWait = FMC_ASYNCHRONOUS_WAIT_DISABLE;
+  hsram1.Init.WriteBurst = FMC_WRITE_BURST_DISABLE;
+  hsram1.Init.ContinuousClock = FMC_CONTINUOUS_CLOCK_SYNC_ONLY;
+  hsram1.Init.PageSize = FMC_PAGE_SIZE_NONE;
+  /* Timing */
+  Timing.AddressSetupTime = 0;
+  Timing.AddressHoldTime = 15;
+  Timing.DataSetupTime = 26;
+  Timing.BusTurnAroundDuration = 15;
+  Timing.CLKDivision = 16;
+  Timing.DataLatency = 17;
+  Timing.AccessMode = FMC_ACCESS_MODE_A;
+  /* ExtTiming */
+  ExtTiming.AddressSetupTime = 0;
+  ExtTiming.AddressHoldTime = 15;
+  ExtTiming.DataSetupTime = 1;
+  ExtTiming.BusTurnAroundDuration = 0;
+  ExtTiming.CLKDivision = 16;
+  ExtTiming.DataLatency = 17;
+  ExtTiming.AccessMode = FMC_ACCESS_MODE_A;
 
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  if (HAL_SRAM_Init(&hsram1, &Timing, &ExtTiming) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler( );
   }
-  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END SPI1_Init 2 */
+  /* USER CODE BEGIN FMC_Init 2 */
 
+  /* USER CODE END FMC_Init 2 */
 }
 
 /**
@@ -265,15 +324,35 @@ static void MX_SPI1_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, SPI1_CS_Pin|DC_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LCD_RST_GPIO_Port, LCD_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : SPI1_CS_Pin DC_Pin */
+  GPIO_InitStruct.Pin = SPI1_CS_Pin|DC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LCD_RST_Pin */
+  GPIO_InitStruct.Pin = LCD_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LCD_RST_GPIO_Port, &GPIO_InitStruct);
 
 }
 
