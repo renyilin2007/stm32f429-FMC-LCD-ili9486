@@ -613,7 +613,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>lcd-driver</GroupName>
+          <GroupName>lcd-ili9486</GroupName>
           <Files>
             <File>
               <FileName>bsp_ili9341_lcd.c</FileName>

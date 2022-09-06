@@ -55,7 +55,6 @@ static void MX_FMC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#if 0
 void LCD_Test(void)
 {
     /*演示显示变量*/
@@ -69,8 +68,9 @@ void LCD_Test(void)
 
     ILI9341_Clear(0,0,LCD_X_LENGTH,LCD_Y_LENGTH);	/* 清屏，显示全黿 */
 	/********显示字符串示便*******/
-    ILI9341_DispStringLine_EN(LINE(0),"BH 3.2 inch LCD para:");
-    ILI9341_DispStringLine_EN(LINE(1),"Image resolution:240x320 px");
+    ILI9341_DispStringLine_EN(LINE(0),"hello lcd");
+    ILI9341_DispStringLine_EN(LINE(1),"Image resolution:480x320 px");
+#if 0
     if(lcdid == LCDID_ILI9341)
     {
         ILI9341_DispStringLine_EN(LINE(2),"ILI9341 LCD driver");
@@ -80,7 +80,8 @@ void LCD_Test(void)
         ILI9341_DispStringLine_EN(LINE(2),"ST7789V LCD driver");
     }
     ILI9341_DispStringLine_EN(LINE(3),"XPT2046 Touch Pad driver");
-  
+#endif
+#if 1
 	/********显示变量示例*******/
 	LCD_SetFont(&Font16x24);
 	LCD_SetTextColor(GREEN);
@@ -155,8 +156,8 @@ void LCD_Test(void)
     HAL_Delay(1000);
   
     ILI9341_Clear(0,16*8,LCD_X_LENGTH,LCD_Y_LENGTH-16*8);	/* 清屏，显示全黿 */
-}
 #endif
+}
 /* USER CODE END 0 */
 
 /**
@@ -194,10 +195,10 @@ int main(void)
   uint16_t test = ILI9341_ReadID();
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+    LCD_Test();
   while (1)
   {
     /* USER CODE END WHILE */
-    //LCD_Test();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
